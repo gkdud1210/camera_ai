@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI 사물 인식 데모</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #f4f8fc;
+            --surface: #ffffff;
+            --surface-soft: #f8fbfe;
+            --line: #d3deea;
+            --line-strong: #8eb3d8;
+            --blue: #1f6fb8;
+            --blue-deep: #174f86;
+            --blue-soft: #eaf2fb;
+            --text: #0f2135;
+            --muted: #617388;
+            --muted-strong: #425467;
+            --shadow: 0 10px 24px rgba(24, 52, 84, 0.06);
+            --radius-xl: 4px;
+            --radius-lg: 3px;
+            --radius-md: 2px;
+            --max-width: 1100px;
+        }
+
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', 'Pretendard', system-ui, -apple-system, sans-serif;
+            color: var(--text);
+            background:
+                linear-gradient(rgba(31, 111, 184, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(31, 111, 184, 0.03) 1px, transparent 1px),
+                var(--bg);
+            background-size: 28px 28px, 28px 28px, auto;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        a { color: inherit; text-decoration: none; }
+
+        .app {
+            width: min(var(--max-width), calc(100% - 32px));
+            margin: 20px auto 36px;
+            display: grid;
+            gap: 16px;
+        }
+
+        /* ── Topbar ── */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 20px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            box-shadow: var(--shadow);
+            border-radius: var(--radius-xl);
+        }
+
+        .brand { display: flex; align-items: center; gap: 14px; }
+
+        .brand-mark {
+            width: 42px; height: 42px;
+            display: grid; place-items: center;
+            border: 1px solid var(--line-strong);
+            background: var(--surface-soft);
+            color: var(--blue-deep);
+            font-size: 1.05rem; font-weight: 800;
+            border-radius: var(--radius-lg);
+            flex: 0 0 auto;
+        }
+
+        .brand-copy strong {
+            display: block;
+            font-size: 1rem; font-weight: 800;
+            letter-spacing: -0.03em;
+        }
+
+        .brand-copy span {
+            display: block;
+            font-size: 0.84rem;
+            color: var(--muted);
+        }
+
+        .top-tag {
+            padding: 8px 13px;
+            border: 1px solid var(--line);
+            background: var(--blue-soft);
+            color: var(--blue-deep);
+            font-size: 0.8rem; font-weight: 700;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            box-shadow: var(--shadow);
+            border-radius: var(--radius-xl);
+        }
+
+        /* ── Hero ── */
+        .hero {
+            padding: 32px 32px 28px;
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 28px;
+            align-items: start;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border: 1px solid var(--line);
+            background: var(--blue-soft);
+            color: var(--blue-deep);
+            font-size: 0.78rem; font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            border-radius: 999px;
+        }
+
+        .hero h1 {
+            margin: 14px 0 12px;
+            font-size: clamp(1.8rem, 3.2vw, 2.8rem);
+            line-height: 1.12;
+            letter-spacing: -0.05em;
+        }
+
+        .hero p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.97rem;
+            max-width: 62ch;
+            line-height: 1.7;
+        }
+
+        .hero-actions {
+            display: flex; flex-wrap: wrap; gap: 10px;
+            margin-top: 22px;
+        }
+
+        .btn, .btn-start {
+            appearance: none;
+            border: 1px solid var(--line-strong);
+            background: var(--surface);
+            color: var(--blue-deep);
+            padding: 12px 18px;
+            border-radius: var(--radius-md);
+            font-size: 0.92rem; font-weight: 700;
+            cursor: pointer;
+            transition: 0.15s ease;
+        }
+
+        .btn:hover, .btn-start:hover { transform: translateY(-1px); }
+
+        .btn-primary, .btn-start {
+            background: var(--blue);
+            color: #ffffff;
+            border-color: var(--blue);
+        }
+
+        /* ── Metrics ── */
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .metric {
+            padding: 16px;
+            border: 1px solid var(--line);
+            background: var(--surface-soft);
+            border-radius: var(--radius-md);
+        }
+
+        .metric .kicker {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--blue-deep);
+            font-size: 0.7rem; font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .metric strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 0.95rem;
+            letter-spacing: -0.02em;
+        }
+
+        .metric p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.82rem;
+            line-height: 1.5;
+        }
+
+        /* ── Section common ── */
+        .section { padding: 26px 32px; }
+
+        .section-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 14px;
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .section-head h2 {
+            margin: 0 0 5px;
+            font-size: 1.28rem;
+            letter-spacing: -0.03em;
+        }
+
+        .section-head p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.91rem;
+        }
+
+        .head-tag {
+            padding: 7px 12px;
+            border: 1px solid var(--line);
+            background: var(--surface-soft);
+            color: var(--blue-deep);
+            font-size: 0.76rem; font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        /* ── Concept cards ── */
+        .concept-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .concept-card {
+            padding: 18px;
+            border: 1px solid var(--line);
+            background: #fff;
+            border-radius: var(--radius-md);
+        }
+
+        .concept-icon {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .concept-card h3 {
+            margin: 0 0 8px;
+            font-size: 0.98rem;
+            letter-spacing: -0.02em;
+        }
+
+        .concept-card p, .concept-card li {
+            color: var(--muted);
+            font-size: 0.88rem;
+            line-height: 1.6;
+        }
+
+        .concept-card ul {
+            margin: 8px 0 0;
+            padding-left: 16px;
+        }
+
+        /* ── Flow steps ── */
+        .flow-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            position: relative;
+        }
+
+        .flow-connector {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            position: absolute;
+            top: 28px;
+            left: 0; right: 0;
+            pointer-events: none;
+        }
+
+        .flow-step {
+            padding: 18px;
+            border: 1px solid var(--line);
+            background: var(--surface-soft);
+            border-radius: var(--radius-md);
+        }
+
+        .step-no {
+            width: 34px; height: 34px;
+            display: grid; place-items: center;
+            border: 1px solid var(--line-strong);
+            color: var(--blue-deep);
+            background: #fff;
+            font-size: 0.82rem; font-weight: 800;
+            border-radius: var(--radius-md);
+            margin-bottom: 12px;
+        }
+
+        .flow-step h3 {
+            margin: 0 0 7px;
+            font-size: 0.96rem;
+            letter-spacing: -0.02em;
+        }
+
+        .flow-step p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.87rem;
+            line-height: 1.55;
+        }
+
+        /* ── Lab / Demo ── */
+        .lab-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .lab-card {
+            padding: 20px;
+            border: 1px solid var(--line);
+            background: #fff;
+            border-radius: var(--radius-md);
+        }
+
+        .lab-card h3 {
+            margin: 0 0 8px;
+            font-size: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        .lab-card p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; }
+
+        .badge {
+            padding: 6px 10px;
+            border: 1px solid var(--line);
+            background: var(--surface-soft);
+            color: var(--blue-deep);
+            font-size: 0.74rem; font-weight: 700;
+            border-radius: 999px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            margin-top: 14px;
+            padding: 9px 13px;
+            border: 1px solid var(--line);
+            background: var(--surface-soft);
+            color: var(--muted-strong);
+            font-size: 0.83rem; font-weight: 600;
+            border-radius: 999px;
+        }
+
+        #webcam-container {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            margin-top: 16px;
+            border: 2px solid var(--line-strong);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            background:
+                linear-gradient(rgba(31,111,184,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(31,111,184,0.04) 1px, transparent 1px),
+                var(--surface-soft);
+            background-size: 18px 18px, 18px 18px, auto;
+            position: relative;
+            display: grid;
+            place-items: center;
+        }
+
+        #webcam-container::before {
+            content: "LIVE";
+            position: absolute;
+            top: 10px; left: 10px;
+            z-index: 2;
+            padding: 5px 9px;
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,0.96);
+            color: var(--blue-deep);
+            font-size: 0.68rem; font-weight: 800;
+            letter-spacing: 0.07em;
+            border-radius: 999px;
+        }
+
+        #webcam-container canvas {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover;
+            display: block;
+        }
+
+        .webcam-placeholder {
+            text-align: center;
+            padding: 20px;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .webcam-placeholder strong {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text);
+            font-size: 0.98rem;
+        }
+
+        .result-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .result-top strong { font-size: 1rem; letter-spacing: -0.02em; }
+        .result-top span { color: var(--muted); font-size: 0.85rem; }
+
+        #label-container { display: grid; gap: 10px; }
+
+        .prediction-item {
+            padding: 12px 14px;
+            border: 1px solid var(--line);
+            background: var(--surface-soft);
+            border-radius: var(--radius-md);
+        }
+
+        .prediction-item.is-top {
+            border-color: var(--line-strong);
+            background: #f3f8fd;
+        }
+
+        .prediction-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 9px;
+            font-weight: 700;
+        }
+
+        .prediction-label { color: var(--text); font-size: 0.92rem; }
+        .prediction-score { color: var(--blue-deep); font-size: 0.9rem; }
+
+        .prediction-bar {
+            width: 100%; height: 10px;
+            border: 1px solid #d7e2ed;
+            background: #e9f0f7;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .prediction-fill {
+            width: 0%; height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #6ca3d7, #1f6fb8);
+            transition: width 0.22s ease;
+        }
+
+        .lab-note {
+            margin-top: 14px;
+            padding: 12px 14px;
+            border: 1px dashed var(--line-strong);
+            background: var(--surface-soft);
+            color: var(--muted);
+            font-size: 0.86rem;
+            border-radius: var(--radius-md);
+            line-height: 1.6;
+        }
+
+        footer {
+            text-align: center;
+            color: #8a9bb0;
+            font-size: 0.82rem;
+            padding: 4px 0 8px;
+        }
+
+        @media (max-width: 900px) {
+            .hero, .lab-grid { grid-template-columns: 1fr; }
+            .concept-grid, .flow-grid { grid-template-columns: repeat(2, 1fr); }
+            .metrics { grid-template-columns: repeat(2, 1fr); }
+            .section-head { flex-direction: column; align-items: flex-start; }
+        }
+
+        @media (max-width: 580px) {
+            .app { width: calc(100% - 20px); margin: 12px auto 24px; }
+            .hero { padding: 22px 20px; }
+            .section { padding: 20px; }
+            .concept-grid { grid-template-columns: 1fr; }
+            .hero h1 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-mark">AI</div>
+                <div class="brand-copy">
+                    <strong>AI 사물 인식 데모</strong>
+                    <span>Teachable Machine · TensorFlow.js</span>
+                </div>
+            </div>
+            <div class="top-tag">실시간 이미지 분류 시연</div>
+        </header>
+
+        <section class="panel hero" id="overview">
+            <div>
+                <span class="eyebrow">이미지 분류란?</span>
+                <h1>카메라 속 사물을<br />AI가 어떻게 인식할까요?</h1>
+                <p>
+                    이 데모는 인공지능 모델이 카메라 화면을 보고 사물을 분류하는 과정을 직접 보여줍니다.
+                    모델이 각 후보에 얼마나 확신하는지 확률로 표시되니, 숫자가 어떻게 변하는지 관찰해 보세요.
+                </p>
+                <div class="hero-actions">
+                    <a class="btn btn-primary" href="#lab">직접 해보기</a>
+                    <a class="btn" href="#concept">원리 먼저 보기</a>
+                </div>
+            </div>
+
+            <div class="metrics">
+                <div class="metric">
+                    <span class="kicker">작동 방식</span>
+                    <strong>실시간 분류</strong>
+                    <p>카메라 영상을 프레임 단위로 분석합니다.</p>
+                </div>
+                <div class="metric">
+                    <span class="kicker">결과 표시</span>
+                    <strong>확률 시각화</strong>
+                    <p>각 클래스의 가능성을 % 막대로 보여줍니다.</p>
+                </div>
+                <div class="metric">
+                    <span class="kicker">실행 환경</span>
+                    <strong>브라우저 전용</strong>
+                    <p>설치 없이 바로 실행됩니다.</p>
+                </div>
+                <div class="metric">
+                    <span class="kicker">학습 도구</span>
+                    <strong>Teachable Machine</strong>
+                    <p>구글이 만든 노코드 AI 훈련 플랫폼입니다.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel section" id="concept">
+            <div class="section-head">
+                <div>
+                    <h2>핵심 개념</h2>
+                    <p>AI가 사물을 인식하는 방식, 핵심만 짚어봅니다.</p>
+                </div>
+                <span class="head-tag">AI Basics</span>
+            </div>
+
+            <div class="concept-grid">
+                <article class="concept-card">
+                    <span class="concept-icon">🧠</span>
+                    <h3>패턴 학습</h3>
+                    <p>
+                        AI는 수천 장의 예시 이미지를 보며 윤곽·색상·질감 같은
+                        시각 패턴을 익힙니다. 단순 암기가 아닌, 반복되는 특징을 일반화하는 방식입니다.
+                    </p>
+                </article>
+
+                <article class="concept-card">
+                    <span class="concept-icon">📊</span>
+                    <h3>확률적 추론</h3>
+                    <p>
+                        새 이미지가 들어오면 학습한 패턴과 비교해 각 클래스의 가능성을 계산합니다.
+                        결과는 "정답 하나"가 아닌 여러 후보의 확률 분포입니다.
+                    </p>
+                </article>
+
+                <article class="concept-card">
+                    <span class="concept-icon">🔍</span>
+                    <h3>판단 기준</h3>
+                    <ul>
+                        <li>형태와 외곽선</li>
+                        <li>색상과 명암 패턴</li>
+                        <li>부분 특징들의 조합</li>
+                    </ul>
+                </article>
+
+                <article class="concept-card">
+                    <span class="concept-icon">⚠️</span>
+                    <h3>한계 알기</h3>
+                    <ul>
+                        <li>학습에 없던 사물은 틀릴 수 있습니다.</li>
+                        <li>조명·각도에 따라 결과가 달라집니다.</li>
+                        <li>확률이 높아도 틀릴 수 있습니다.</li>
+                    </ul>
+                </article>
+            </div>
+        </section>
+
+        <section class="panel section" id="pipeline">
+            <div class="section-head">
+                <div>
+                    <h2>작동 원리 — 4단계</h2>
+                    <p>카메라 입력부터 결과 표시까지, AI가 어떤 순서로 처리하는지 봅니다.</p>
+                </div>
+                <span class="head-tag">How It Works</span>
+            </div>
+
+            <div class="flow-grid">
+                <article class="flow-step">
+                    <div class="step-no">01</div>
+                    <h3>입력 수집</h3>
+                    <p>웹캠에서 프레임을 캡처하고, 모델이 읽을 수 있는 형태(224×224 픽셀)로 변환합니다.</p>
+                </article>
+
+                <article class="flow-step">
+                    <div class="step-no">02</div>
+                    <h3>특징 추출</h3>
+                    <p>신경망이 이미지에서 색상·경계선·구조 등 수백 가지 특징 값을 뽑아냅니다.</p>
+                </article>
+
+                <article class="flow-step">
+                    <div class="step-no">03</div>
+                    <h3>클래스 비교</h3>
+                    <p>추출한 특징을 학습된 각 클래스와 비교해 얼마나 닮았는지 점수를 매깁니다.</p>
+                </article>
+
+                <article class="flow-step">
+                    <div class="step-no">04</div>
+                    <h3>결과 출력</h3>
+                    <p>점수를 0~100% 확률로 변환해 막대 그래프로 표시하고, 1위 클래스를 강조합니다.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="panel section" id="lab">
+            <div class="section-head">
+                <div>
+                    <h2>직접 해보기</h2>
+                    <p>버튼을 누르면 카메라가 켜지고, AI가 실시간으로 사물을 분석합니다.</p>
+                </div>
+                <span class="head-tag">Live Demo</span>
+            </div>
+
+            <div class="lab-grid">
+                <div class="lab-card">
+                    <h3>카메라 입력</h3>
+                    <p>버튼을 누른 뒤 카메라 권한을 허용하면 실시간 분석이 시작됩니다.</p>
+
+                    <div class="badge-row">
+                        <span class="badge">실시간 카메라</span>
+                        <span class="badge">브라우저 추론</span>
+                        <span class="badge">클래스 확률</span>
+                    </div>
+
+                    <div style="margin-top: 18px;">
+                        <button class="btn-start" type="button" onclick="init()">AI 카메라 시작하기</button>
+                    </div>
+
+                    <div class="status-badge" id="status-badge">
+                        대기 중 · 버튼을 누르면 분석이 시작됩니다
+                    </div>
+
+                    <div id="webcam-container">
+                        <div class="webcam-placeholder">
+                            <strong>카메라 준비 전</strong>
+                            버튼을 누르고 권한을 허용하면 여기에 화면이 나타납니다.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lab-card">
+                    <div class="result-top">
+                        <div>
+                            <strong>예측 결과</strong><br />
+                            <span>가장 높은 확률의 클래스가 파란색으로 강조됩니다.</span>
+                        </div>
+                    </div>
+
+                    <div id="label-container"></div>
+
+                    <div class="lab-note">
+                        💡 <strong>더 잘 보이려면:</strong> 사물을 화면 중앙에 두고, 배경을 단순하게 유지하고, 밝은 곳에서 테스트해 보세요.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            AI 사물 인식 데모 · Google Teachable Machine &amp; TensorFlow.js
+        </footer>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    <script>
+        const URL = "https://teachablemachine.withgoogle.com/models/m9DexfFLrh/";
+
+        let model, webcam, labelContainer, maxPredictions;
+        let isInitialized = false;
+
+        function setStatus(message) {
+            document.getElementById("status-badge").textContent = message;
+        }
+
+        async function init() {
+            const startButton = document.querySelector(".btn-start");
+            if (isInitialized) {
+                setStatus("실행 중 · 이미 카메라가 활성화되어 있습니다");
+                return;
+            }
+
+            try {
+                startButton.disabled = true;
+                startButton.style.opacity = "0.7";
+                startButton.textContent = "모델 로딩 중...";
+                setStatus("준비 중 · 모델과 카메라를 불러오고 있습니다");
+
+                const modelURL = URL + "model.json";
+                const metadataURL = URL + "metadata.json";
+
+                model = await tmImage.load(modelURL, metadataURL);
+                maxPredictions = model.getTotalClasses();
+
+                const flip = true;
+                webcam = new tmImage.Webcam(420, 420, flip);
+                await webcam.setup();
+                await webcam.play();
+
+                const webcamContainer = document.getElementById("webcam-container");
+                webcamContainer.innerHTML = "";
+                webcamContainer.appendChild(webcam.canvas);
+
+                labelContainer = document.getElementById("label-container");
+                labelContainer.innerHTML = "";
+
+                for (let i = 0; i < maxPredictions; i++) {
+                    const predictionItem = document.createElement("div");
+                    predictionItem.className = "prediction-item";
+                    predictionItem.innerHTML = `
+                        <div class="prediction-top">
+                            <span class="prediction-label">분석 중...</span>
+                            <span class="prediction-score">0%</span>
+                        </div>
+                        <div class="prediction-bar">
+                            <div class="prediction-fill"></div>
+                        </div>
+                    `;
+                    labelContainer.appendChild(predictionItem);
+                }
+
+                isInitialized = true;
+                startButton.textContent = "카메라 실행 중";
+                setStatus("실행 중 · 사물을 비추면 AI가 실시간으로 분류합니다");
+
+                window.requestAnimationFrame(loop);
+            } catch (error) {
+                console.error(error);
+                setStatus("오류 · 카메라 권한 또는 모델 로딩 상태를 확인해 주세요");
+                startButton.disabled = false;
+                startButton.style.opacity = "1";
+                startButton.textContent = "다시 시도하기";
+            }
+        }
+
+        async function loop() {
+            webcam.update();
+            await predict();
+            window.requestAnimationFrame(loop);
+        }
+
+        async function predict() {
+            const prediction = await model.predict(webcam.canvas);
+            let topIndex = 0;
+            let topScore = 0;
+
+            prediction.forEach((item, index) => {
+                if (item.probability > topScore) {
+                    topScore = item.probability;
+                    topIndex = index;
+                }
+            });
+
+            for (let i = 0; i < maxPredictions; i++) {
+                const probability = Math.round(prediction[i].probability * 100);
+                const item = labelContainer.childNodes[i];
+                const label = item.querySelector(".prediction-label");
+                const score = item.querySelector(".prediction-score");
+                const fill = item.querySelector(".prediction-fill");
+
+                label.textContent = prediction[i].className;
+                score.textContent = probability + "%";
+                fill.style.width = probability + "%";
+
+                if (i === topIndex) {
+                    item.classList.add("is-top");
+                } else {
+                    item.classList.remove("is-top");
+                }
+            }
+        }
+    </script>
+</body>
+</html>
